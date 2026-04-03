@@ -35,6 +35,12 @@ banner_img: Dora游戏引擎的内置AI编码助手，写啦/封面.png
 
 &emsp;&emsp;LLM 的 context window 是有限的，但 Agent 任务可能需要处理大量历史信息。nanobot 的 context 管理架构给了我们很大启发：
 
+&emsp;&emsp;首先，什么是 context window？可以把它理解为一个"容器"，LLM 每次处理对话时，需要把系统提示词、历史对话、用户消息都塞进这个容器里。不同模型容器大小不同，比如 Claude 3 有 200k tokens，GPT-4 Turbo 有 128k tokens，nanobot 默认配置是 65,536 tokens。
+
+&emsp;&emsp;但这个容器不是全都能用来装对话历史的。nanobot 采用了一个"预算控制"策略：先把一部分空间"锁死"——比如预留 8,192 tokens 给 LLM 生成回复（毕竟 LLM 的回复本身也要占用 context），再预留 1,024 tokens 作为安全缓冲。这样算下来，真正可用于对话历史的空间（budget）大约是 56,000 tokens。
+
+&emsp;&emsp;有了这个预算，nanobot 会实时估算当前 prompt 的 token 数，一旦发现超过预算，就触发内存压缩，把旧的对话历史压缩成精简摘要，释放空间。压缩的目标是把使用量降到预算的一半（约 28,000 tokens），为后续对话预留充足空间。
+
 ![估算](Dora游戏引擎的内置AI编码助手，写啦/估算.png)
 
 &emsp;&emsp;核心设计点是：
